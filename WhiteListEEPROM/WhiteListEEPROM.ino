@@ -45,22 +45,22 @@ void WriteCard(cardType data, int address){
    // put your setup code here, to run once:
  
   insertCardIdEEPROM(address*10, data.card);
-  EEPROM.write(address*10+4, data.device_1);
+  /*EEPROM.write(address*10+4, data.device_1);
   EEPROM.write(address*10+5, data.device_2);
   EEPROM.write(address*10+6, data.device_3);
   EEPROM.write(address*10+7, data.device_4);
-  EEPROM.write(address*10+8, data.timeOpen);
+  EEPROM.write(address*10+8, data.timeOpen);*/
   
 }
 
  cardType ReadCard(int address){
   cardType data;
   data.card = readCardIdEEPROM(address*10);
-  data.device_1 = EEPROM.read(address*10+4);
+  /*data.device_1 = EEPROM.read(address*10+4);
   data.device_2 = EEPROM.read(address*10+5);
   data.device_3 = EEPROM.read(address*10+6);
   data.device_4 = EEPROM.read(address*10+7);
-  data.timeOpen = EEPROM.read(address*10+8);
+  data.timeOpen = EEPROM.read(address*10+8);*/
   data.next = EEPROM.read(address*10+9);
   return data;
 }
@@ -70,16 +70,20 @@ void WriteCard(cardType data, int address){
  *  Getters and Setters
  */
  
- int getNextPosition(int address){
+ int getNextValue(int address){
   return EEPROM.read(address * 10 + 9);
 }
 
- void setNextPosition(int address, int newNextPosition){
+ void setNextValue(int address, int newNextPosition){
   EEPROM.write(address * 10 + 9, newNextPosition);
 }
 
  int getValue(int pos){
   return EEPROM.read(pos);
+}
+
+void setValue(int pos, int value){
+  EEPROM.write(pos, value);
 }
 
 /*
@@ -100,7 +104,6 @@ void WriteCard(cardType data, int address){
 
 boolean addCard(cardType data){
   if(getValue(posFirstFree) < cardLimit){
-    Serial.println(getValue(posFirstFree));
     WriteCard(data, getValue(posFirstFree));
     cardType data = ReadCard(getValue(posFirstFree));
     if(getValue(posQtdeCards) == 0) EEPROM.write(posFirstOcc,0);
@@ -117,7 +120,17 @@ boolean addCard(cardType data){
 }
 
 void listCards(){
-  Serial.println("Lista de cartões na EEPROM");
+  Serial.print("Primeiro Livre: ");
+  Serial.println(getValue(posFirstFree));
+  Serial.print("Primeiro Ocupado: ");
+  Serial.println(getValue(posFirstOcc));
+  Serial.print("Ultimo Ocupado: ");
+  Serial.println(getValue(posLastOcc));
+  Serial.print("Qtde Cartoes: ");
+  Serial.println(getValue(posQtdeCards));
+  Serial.println("Lista de cartoes na EEPROM");
+
+  
   int next;
   for(int i = 0; i < getValue(posQtdeCards); i++){
     cardType card;
@@ -136,7 +149,7 @@ void listCards(){
   }
 }
 
-/*cardType findCard(int id_card){
+cardType findCard(int id_card){
   int next;
   cardType data;
   for(int i = 0; i < getValue(posQtdeCards); i++){
@@ -151,8 +164,54 @@ void listCards(){
     }
   }
   cardType t;
+  t.card = 0;
   return t;
-}*/
+}
+
+boolean deleteCard(uint32_t id_card){
+  cardType pos;
+  cardType lastPos;
+  int next;
+  int last;
+  boolean ret = false;
+  for(int i = 0; i < getValue(posQtdeCards); i++){
+    if(i == 0){
+      pos = ReadCard(getValue(posFirstOcc));
+      
+      if(pos.card == id_card){
+        Serial.println("Igual");
+        int temp = getValue(posFirstFree);
+        setValue(posFirstFree, getValue(posFirstOcc));
+        setNextValue(getValue(posFirstOcc), temp);
+        setNextValue(getValue(posLastOcc), getValue(posFirstOcc));
+        setNextValue(posFirstOcc, temp);
+        setValue(posFirstOcc, pos.next);
+        setValue(posQtdeCards, getValue(posQtdeCards)-1);
+        ret = true;   
+      }
+      
+    }else{
+      lastPos = pos;
+      pos = ReadCard(next);
+            
+      if(pos.card == id_card){
+        Serial.println("Igual");
+        int temp = lastPos.next;
+        int temp2 = getValue(posFirstFree);
+        setNextValue(last, pos.next);
+        setNextValue(getValue(posLastOcc), temp);
+        setValue(posFirstFree, temp);
+        setNextValue(next, temp2);
+        setValue(posQtdeCards, getValue(posQtdeCards)-1);
+        ret = true;   
+      }
+      
+    }
+    last = next;
+    next = pos.next;
+  }
+  return ret;
+}
 
 
 cardType createCard(uint32_t card){
@@ -161,9 +220,15 @@ cardType createCard(uint32_t card){
   return data;
 }
 void setup() {
-  //resetEEPROM();
+ 
   Serial.begin(115200);
-  addCard(createCard(0x12345678));
+  /*resetEEPROM();
+  addCard(createCard(0xabcdef12));
+  addCard(createCard(0xabcdef23));
+  addCard(createCard(0xabcdef34));
+  addCard(createCard(0xabcdef45));*/
+  addCard(createCard(0xabcdef90));
+  //Serial.println(deleteCard(0xabcdef12));
   listCards();
   //Serial.println(findCard(0xdfdfd));
 }
