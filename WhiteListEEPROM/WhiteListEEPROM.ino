@@ -91,9 +91,9 @@ void setValue(int pos, int value){
  */
 
  void resetEEPROM(){
-  EEPROM.write(posFirstOcc, -1);
+  EEPROM.write(posFirstOcc, 200);
   EEPROM.write(posFirstFree, 0);
-  EEPROM.write(posLastOcc, -1);
+  EEPROM.write(posLastOcc, 200);
   EEPROM.write(posQtdeCards, 0);
   for(int i = 0; i < cardLimit; i++){
     EEPROM.write(i*10+9, i+1);
@@ -143,7 +143,7 @@ void listCards(){
     next = card.next;
     Serial.println("-------------------");
     Serial.print("Card: ");
-    Serial.println(card.card, HEX);
+    Serial.println(card.card);
     Serial.print("Position Next: ");
     Serial.println(card.next);
   }
@@ -219,23 +219,63 @@ cardType createCard(uint32_t card){
   data.card = card;
   return data;
 }
+
+
+
+
+String inputString = "";         // a string to hold incoming data
+boolean stringComplete = false;  // whether the string is complete
+
+
+
 void setup() {
  
   Serial.begin(115200);
-  /*resetEEPROM();
-  addCard(createCard(0xabcdef12));
-  addCard(createCard(0xabcdef23));
-  addCard(createCard(0xabcdef34));
-  addCard(createCard(0xabcdef45));*/
-  addCard(createCard(0xabcdef90));
-  //Serial.println(deleteCard(0xabcdef12));
-  listCards();
-  //Serial.println(findCard(0xdfdfd));
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
+}
+
+void serialEvent() {
+
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar =(char) Serial.read();
+    // add it to the inputString:
+    inputString += inChar;
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+            Serial.println(inputString);
+
+     // stringComplete = true;
+    //}
+   // if(stringComplete == true){
+      String command = inputString.substring(0,3);
+      uint32_t card = inputString.substring(4).toInt();
+      Serial.println(card);
+      inputString = "";
+      if(command == "add"){
+          addCard(createCard(card));
+          Serial.println("Cartao adicionado");
+      }else if(command == "lst"){
+          listCards();
+      }else if(command == "clr"){
+          resetEEPROM();
+           Serial.println("EEPROM resetada");
+      }else if(command == "del"){
+           if(deleteCard(card)==true){ 
+              Serial.println("Cartao deletado");
+           } else {
+             Serial.println("Cartao nao encontrado");
+           }
+      }else if(command == "fnd"){
+           Serial.println(findCard(card).card);
+      }
+    }
+  }
 }
 
 
