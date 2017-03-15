@@ -119,7 +119,7 @@ boolean addCard(cardType data){
   }
 }
 
-void listCards(){
+void listCardsInOrder(){
   Serial.print("Primeiro Livre: ");
   Serial.println(getValue(posFirstFree));
   Serial.print("Primeiro Ocupado: ");
@@ -129,7 +129,8 @@ void listCards(){
   Serial.print("Qtde Cartoes: ");
   Serial.println(getValue(posQtdeCards));
   Serial.println("Lista de cartoes na EEPROM");
-
+  listCards();
+  Serial.println("");
   
   int next;
   for(int i = 0; i < getValue(posQtdeCards); i++){
@@ -146,6 +147,15 @@ void listCards(){
     Serial.println(card.card);
     Serial.print("Position Next: ");
     Serial.println(card.next);
+  }
+}
+
+void listCards(){
+  for(int i = 0; i < getValue(posQtdeCards); i++){
+    cardType card = ReadCard(i);
+    Serial.print("|");
+    Serial.print(card.card);
+    Serial.print("|");
   }
 }
 
@@ -168,7 +178,7 @@ cardType findCard(int id_card){
   return t;
 }
 
-boolean deleteCard(uint32_t id_card){
+/*boolean deleteCard(uint32_t id_card){
   cardType pos;
   cardType lastPos;
   int next;
@@ -210,6 +220,60 @@ boolean deleteCard(uint32_t id_card){
     last = next;
     next = pos.next;
   }
+  return ret;
+}*/
+
+
+boolean deleteCard(uint32_t id_card){
+  cardType inPosition;
+  int thisPos = getValue(posFirstOcc);
+  int antPos = 0;
+  boolean ret = false;
+  for(int i = 0; i < getValue(posQtdeCards); i++){
+    
+    if(ret) break;
+    
+    inPosition = ReadCard(thisPos);
+
+    if(inPosition.card == id_card){
+      
+      //del first element
+      if(i == 0){
+        int temp = getNextValue(getValue(posLastOcc));
+        int temp2 = inPosition.next;
+
+        setNextValue(getValue(posLastOcc), getValue(posFirstOcc));
+        setValue(posFirstFree, getValue(posFirstOcc));
+        setNextValue(thisPos, temp);
+        setValue(posFirstOcc, temp2);  
+      } 
+      
+      //del last element
+      else if(i == getValue(posQtdeCards)-1) {
+        setValue(posFirstFree, getValue(posLastOcc));
+        setValue(posLastOcc, antPos);
+      }
+      
+      //del another elements
+      else{
+        int temp = getNextValue(thisPos);
+        int temp2 = getValue(posFirstFree);
+        setNextValue(antPos, temp);
+        setNextValue(thisPos, temp2);
+        setNextValue(getValue(posLastOcc), thisPos);
+        setValue(posFirstFree, thisPos);
+      }
+      
+      //default operation
+      setValue(posQtdeCards, getValue(posQtdeCards)-1);
+      ret = true;
+      
+    }// if(inPosition.card == id_card)
+    
+    antPos = thisPos;
+    thisPos = inPosition.next;
+    
+  }//for
   return ret;
 }
 
@@ -255,17 +319,16 @@ void serialEvent() {
    // if(stringComplete == true){
       String command = inputString.substring(0,3);
       uint32_t card = inputString.substring(4).toInt();
-      Serial.println(card);
       inputString = "";
       if(command == "add"){
           addCard(createCard(card));
           Serial.println("Cartao adicionado");
       }else if(command == "lst"){
-          listCards();
+          listCardsInOrder();
       }else if(command == "clr"){
           resetEEPROM();
            Serial.println("EEPROM resetada");
-      }else if(command == "del"){
+      }else if(command == "rmv"){
            if(deleteCard(card)==true){ 
               Serial.println("Cartao deletado");
            } else {
