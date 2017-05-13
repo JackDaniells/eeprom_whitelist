@@ -1,6 +1,6 @@
 # listaEncadeadaArduino
 
-Implementação de um simulador de ecossistema em Arduino(C++)
+Implementação de uma lista encadeada em Arduino(C++)
 
 O projeto consiste na implementação de um sistema que permite o uso de uma lista encadeada em C++, com funções de:
 
